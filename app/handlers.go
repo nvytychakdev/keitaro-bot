@@ -47,10 +47,6 @@ func Start(b *gotgbot.Bot, ctx *ext.Context) error {
 
 	go func() {
 
-		b.SendMessage(ctx.EffectiveSender.ChatId, "Here is your reports for the day:", &gotgbot.SendMessageOpts{
-			ParseMode: "HTML",
-		})
-
 		client.PollingStarted = true
 		trackCampaigns(b, ctx)
 

@@ -11,6 +11,7 @@ import (
 )
 
 func Execute() {
+
 	telegramApiKey := os.Getenv("TELEGRAM_API_KEY")
 	bot, err := gotgbot.NewBot(telegramApiKey, nil)
 	if err != nil {
@@ -26,9 +27,23 @@ func Execute() {
 	})
 	updater := ext.NewUpdater(dispatcher, nil)
 
+	// set list of the commands for bot autocomplete
+	bot.SetMyCommands([]gotgbot.BotCommand{
+		{
+			Command:     "start",
+			Description: "Start listening for report changes",
+		},
+		{
+			Command:     "stop",
+			Description: "Stop reports changes notifications",
+		},
+	}, &gotgbot.SetMyCommandsOpts{})
+
+	// set commands handlers
 	dispatcher.AddHandler(handlers.NewCommand("start", Start))
 	dispatcher.AddHandler(handlers.NewCommand("stop", Stop))
 
+	slog.Info("Bot awaiting for subscriptions...")
 	updater.StartPolling(bot, &ext.PollingOpts{
 		DropPendingUpdates: true,
 		GetUpdatesOpts: &gotgbot.GetUpdatesOpts{
@@ -40,5 +55,4 @@ func Execute() {
 	})
 
 	updater.Idle()
-	slog.Info("Bot awaiting for subscriptions...")
 }
