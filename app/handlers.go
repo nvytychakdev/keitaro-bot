@@ -1,16 +1,21 @@
 package app
 
 import (
-	"time"
+	"context"
+	"os"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
+	"github.com/redis/go-redis/v9"
 )
 
-var ticker *time.Ticker
-var tickerComplete chan bool
+var ctx = context.Background()
 var client = &Client{
-	Subscribers: map[int64]*ext.Context{},
+	Redis: redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_ADDR"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+	}),
+	Subscribers: map[int64]ext.Context{},
 }
 
 func Start(b *gotgbot.Bot, ctx *ext.Context) error {
@@ -37,33 +42,7 @@ func Start(b *gotgbot.Bot, ctx *ext.Context) error {
 	}
 
 	client.Subscribe(ctx)
-	if client.PollingStarted {
-		logger.Error("Polling already started, skip run")
-		return nil
-	}
-
-	ticker = time.NewTicker(TICKER_TIME_INTERVAL)
-	tickerComplete = make(chan bool)
-
-	go func() {
-
-		client.PollingStarted = true
-		trackCampaigns(b, ctx)
-
-		logger.Info("Polling started", "Interval", TICKER_TIME_INTERVAL)
-
-		for {
-			select {
-			case <-tickerComplete:
-				storedActiveReports = []Report{}
-				client.PollingStarted = false
-				logger.Info("Polling stopped gracefully")
-				return
-			case <-ticker.C:
-				trackCampaigns(b, ctx)
-			}
-		}
-	}()
+	StartPoller(b)
 
 	return nil
 }

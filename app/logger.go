@@ -16,3 +16,9 @@ func createTelegramLogger(ctx *ext.Context) *slog.Logger {
 	logger = logger.With("Username", ctx.EffectiveChat.Username)
 	return logger
 }
+
+func SetGlobalLogger() {
+	slog.SetDefault(slog.New(
+		tint.NewHandler(os.Stdout, nil),
+	))
+}

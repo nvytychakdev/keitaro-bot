@@ -8,6 +8,8 @@ import (
 )
 
 func main() {
+	app.SetGlobalLogger()
+
 	err := godotenv.Load()
 
 	if err != nil {

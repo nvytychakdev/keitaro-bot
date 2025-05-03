@@ -11,7 +11,6 @@ import (
 	"slices"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
-	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 )
 
 type Report struct {
@@ -39,7 +38,7 @@ type ReportResponse struct {
 
 var storedActiveReports []Report
 
-func trackCampaigns(b *gotgbot.Bot, ctx *ext.Context) error {
+func trackCampaigns(b *gotgbot.Bot) error {
 
 	reports, err := fetchAllReports()
 	if err != nil {
@@ -57,9 +56,11 @@ func trackCampaigns(b *gotgbot.Bot, ctx *ext.Context) error {
 	slog.Info("Stored active reports from previous run", "Stored reports count", len(storedActiveReports))
 	slog.Info("Stored reports list", "Reports", storedActiveReports)
 
+	storeActiveReport(&storedActiveReports)
+
 	for _, report := range activeReports {
-		for sub := range client.GetAllSubscribers() {
-			logger := createTelegramLogger(ctx)
+		for _, sub := range client.GetAllSubscribers() {
+			logger := createTelegramLogger(sub)
 
 			message := fmt.Sprintf(
 				"Campaign: %s (id: %d)\n```Details:\nClicks: %v\nSales: %v\nLeads: %v\nConversions: %v```",
@@ -170,4 +171,36 @@ func compareStoredReports(reports []Report, storedReports []Report) ([]Report, [
 	}
 
 	return reports, storedReports
+}
+
+func storeActiveReport(report *[]Report) {
+	data, err := json.Marshal(&report)
+	if err != nil {
+		slog.Error("Not able to marshal active reports", "Err", err.Error())
+		return
+	}
+
+	err = client.Redis.Set(ctx, "activeReports", data, 0).Err()
+	if err != nil {
+		slog.Error("Not able to store active reports")
+	}
+}
+
+func readActiveReports() {
+	if client.Redis.Exists(ctx, "activeReports").Val() == 0 {
+		slog.Info("No active reports stored")
+		return
+	}
+
+	data, err := client.Redis.Get(ctx, "activeReports").Bytes()
+	if err != nil {
+		slog.Error("Not able to retrieve active reports", "Err", err.Error())
+		return
+	}
+
+	err = json.Unmarshal(data, &storedActiveReports)
+	if err != nil {
+		slog.Error("Not able to unmarshal stored reports", "Err", err.Error())
+		return
+	}
 }

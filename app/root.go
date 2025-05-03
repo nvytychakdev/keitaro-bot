@@ -11,7 +11,6 @@ import (
 )
 
 func Execute() {
-
 	telegramApiKey := os.Getenv("TELEGRAM_API_KEY")
 	bot, err := gotgbot.NewBot(telegramApiKey, nil)
 	if err != nil {
@@ -42,6 +41,12 @@ func Execute() {
 	// set commands handlers
 	dispatcher.AddHandler(handlers.NewCommand("start", Start))
 	dispatcher.AddHandler(handlers.NewCommand("stop", Stop))
+
+	slog.Info("Read subscribers, find listeners...")
+	client.ReadSubscribers()
+	if client.HasSubscribers() {
+		StartPoller(bot)
+	}
 
 	slog.Info("Bot awaiting for subscriptions...")
 	updater.StartPolling(bot, &ext.PollingOpts{
