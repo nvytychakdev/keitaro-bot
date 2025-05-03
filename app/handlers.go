@@ -13,6 +13,7 @@ var ctx = context.Background()
 var client = &Client{
 	Redis: redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_ADDR"),
+		Username: os.Getenv("REDIS_USER"),
 		Password: os.Getenv("REDIS_PASSWORD"),
 	}),
 	Subscribers: map[int64]ext.Context{},
