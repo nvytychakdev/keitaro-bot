@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"slices"
@@ -39,26 +40,27 @@ type ReportResponse struct {
 var storedActiveReports []Report
 
 func trackCampaigns(b *gotgbot.Bot, ctx *ext.Context) error {
-	logger := createTelegramLogger(ctx)
 
 	reports, err := fetchAllReports()
 	if err != nil {
 		return err
 	}
 
-	logger.Info("Retrieved list of reports", "Reports count", len(reports))
+	slog.Info("Retrieved list of reports", "ReportsCount", len(reports))
 
 	activeReports := getActiveReports(reports)
 	activeReports, storedActiveReports = compareStoredReports(activeReports, storedActiveReports)
 
-	logger.Info("Collected active reports", "Active reports count", len(activeReports))
-	logger.Info("Active reports list", "Reports", activeReports)
+	slog.Info("Collected active reports", "ActiveReportsCount", len(activeReports))
+	slog.Info("Active reports list", "Reports", activeReports)
 
-	logger.Info("Stored active reports from previous run", "Stored reports count", len(storedActiveReports))
-	logger.Info("Stored active reports list", "Reports", storedActiveReports)
+	slog.Info("Stored active reports from previous run", "Stored reports count", len(storedActiveReports))
+	slog.Info("Stored reports list", "Reports", storedActiveReports)
 
 	for _, report := range activeReports {
 		for sub := range client.GetAllSubscribers() {
+			logger := createTelegramLogger(ctx)
+
 			message := fmt.Sprintf(
 				"Campaign: %s (id: %d)\n```Details:\nClicks: %v\nSales: %v\nLeads: %v\nConversions: %v```",
 				report.CampaignName,

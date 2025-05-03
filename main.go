@@ -11,7 +11,7 @@ func main() {
 	err := godotenv.Load()
 
 	if err != nil {
-		slog.Error("Failed to load environment file")
+		slog.Debug("Failed to load environment file, looking for global env...")
 	}
 
 	app.Execute()
