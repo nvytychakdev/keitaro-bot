@@ -167,6 +167,9 @@ func compareStoredReports(reports []Report, storedReports []Report) ([]Report, [
 
 		if report.Sales < storedReport.Sales {
 			storedReports = deleteFromSlice(storedReports, storedReportIndex)
+			if report.Sales > 0 {
+				storedReports = append(storedReports, report)
+			}
 		}
 	}
 
