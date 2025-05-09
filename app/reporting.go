@@ -47,7 +47,6 @@ func trackCampaigns(b *gotgbot.Bot) error {
 
 	slog.Info("Retrieved list of reports", "ReportsCount", len(reports))
 
-	reports, storedActiveReports = cleanupStoredReports(reports, storedActiveReports)
 	activeReports := getActiveReports(reports)
 	activeReports, storedActiveReports = compareStoredReports(activeReports, storedActiveReports)
 
@@ -132,25 +131,15 @@ func getActiveReports(reports []Report) []Report {
 			continue
 		}
 
+		storedActiveReportIndex := slices.IndexFunc(storedActiveReports, func(r Report) bool { return r.CampaignId == report.CampaignId && r.Sales == report.Sales })
+		if storedActiveReportIndex != -1 {
+			continue
+		}
+
 		activeReports = append(activeReports, report)
 	}
 
 	return activeReports
-}
-
-func cleanupStoredReports(reports []Report, storedReports []Report) ([]Report, []Report) {
-	if len(storedReports) == 0 {
-		return reports, storedReports
-	}
-
-	for _, report := range reports {
-		storedReportIndex := slices.IndexFunc(storedReports, func(r Report) bool { return r.CampaignId == report.CampaignId && report.Sales < r.Sales })
-		if storedReportIndex != -1 {
-			storedReports = deleteFromSlice(storedReports, storedReportIndex)
-		}
-	}
-
-	return reports, storedReports
 }
 
 func compareStoredReports(reports []Report, storedReports []Report) ([]Report, []Report) {
