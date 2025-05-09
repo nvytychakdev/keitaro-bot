@@ -3,6 +3,10 @@ services:
     build:
       context: . 
       dockerfile: Dockerfile
+    develop:
+      watch:
+        - action: rebuild
+          path: ./app
     container_name: keitaro_bot
     ports:
       - "8080:8080"
