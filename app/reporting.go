@@ -47,8 +47,7 @@ func trackCampaigns(b *gotgbot.Bot) error {
 
 	slog.Info("Retrieved list of reports", "ReportsCount", len(reports))
 
-	reports, storedActiveReports = cleanupStoredReports(reports, storedActiveReports)
-	activeReports, storedActiveReports := getActiveReports(reports, storedActiveReports)
+	activeReports := getActiveReports(reports)
 	activeReports, storedActiveReports = compareStoredReports(activeReports, storedActiveReports)
 
 	slog.Info("Collected active reports", "ActiveReportsCount", len(activeReports))
@@ -124,7 +123,7 @@ func fetchAllReports() ([]Report, error) {
 	return reportResponse.Reports, nil
 }
 
-func getActiveReports(reports []Report, storedReports []Report) ([]Report, []Report) {
+func getActiveReports(reports []Report) []Report {
 	var activeReports []Report
 
 	for _, report := range reports {
@@ -132,7 +131,7 @@ func getActiveReports(reports []Report, storedReports []Report) ([]Report, []Rep
 			continue
 		}
 
-		storedActiveReportIndex := slices.IndexFunc(storedReports, func(r Report) bool { return r.CampaignId == report.CampaignId && r.Sales == report.Sales })
+		storedActiveReportIndex := slices.IndexFunc(storedActiveReports, func(r Report) bool { return r.CampaignId == report.CampaignId && r.Sales == report.Sales })
 		if storedActiveReportIndex != -1 {
 			continue
 		}
@@ -140,30 +139,7 @@ func getActiveReports(reports []Report, storedReports []Report) ([]Report, []Rep
 		activeReports = append(activeReports, report)
 	}
 
-	return activeReports, storedReports
-}
-
-func cleanupStoredReports(reports []Report, storedReports []Report) ([]Report, []Report) {
-	if len(storedReports) == 0 {
-		return reports, storedReports
-	}
-
-	var cleanStoredReports = []Report{}
-	for _, report := range reports {
-		storedReportIndex := slices.IndexFunc(storedReports, func(r Report) bool { return r.CampaignId == report.CampaignId })
-		if storedReportIndex == -1 {
-			continue
-		}
-
-		storedReport := storedReports[storedReportIndex]
-		if storedReport.Sales < report.Sales {
-			continue
-		}
-
-		cleanStoredReports = append(cleanStoredReports, storedReport)
-	}
-
-	return reports, cleanStoredReports
+	return activeReports
 }
 
 func compareStoredReports(reports []Report, storedReports []Report) ([]Report, []Report) {
