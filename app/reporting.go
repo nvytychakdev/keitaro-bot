@@ -48,7 +48,7 @@ func trackCampaigns(b *gotgbot.Bot) error {
 	slog.Info("Retrieved list of reports", "ReportsCount", len(reports))
 
 	reports, storedActiveReports = cleanupStoredReports(reports, storedActiveReports)
-	activeReports := getActiveReports(reports)
+	activeReports, storedActiveReports := getActiveReports(reports, storedActiveReports)
 	activeReports, storedActiveReports = compareStoredReports(activeReports, storedActiveReports)
 
 	slog.Info("Collected active reports", "ActiveReportsCount", len(activeReports))
@@ -124,7 +124,7 @@ func fetchAllReports() ([]Report, error) {
 	return reportResponse.Reports, nil
 }
 
-func getActiveReports(reports []Report) []Report {
+func getActiveReports(reports []Report, storedReports []Report) ([]Report, []Report) {
 	var activeReports []Report
 
 	for _, report := range reports {
@@ -132,10 +132,15 @@ func getActiveReports(reports []Report) []Report {
 			continue
 		}
 
+		storedActiveReportIndex := slices.IndexFunc(storedReports, func(r Report) bool { return r.CampaignId == report.CampaignId && r.Sales == report.Sales })
+		if storedActiveReportIndex != -1 {
+			continue
+		}
+
 		activeReports = append(activeReports, report)
 	}
 
-	return activeReports
+	return activeReports, storedReports
 }
 
 func cleanupStoredReports(reports []Report, storedReports []Report) ([]Report, []Report) {
@@ -143,14 +148,22 @@ func cleanupStoredReports(reports []Report, storedReports []Report) ([]Report, [
 		return reports, storedReports
 	}
 
+	var cleanStoredReports = []Report{}
 	for _, report := range reports {
-		storedReportIndex := slices.IndexFunc(storedReports, func(r Report) bool { return r.CampaignId == report.CampaignId && report.Sales < r.Sales })
-		if storedReportIndex != -1 {
-			storedReports = deleteFromSlice(storedReports, storedReportIndex)
+		storedReportIndex := slices.IndexFunc(storedReports, func(r Report) bool { return r.CampaignId == report.CampaignId })
+		if storedReportIndex == -1 {
+			continue
 		}
+
+		storedReport := storedReports[storedReportIndex]
+		if storedReport.Sales < report.Sales {
+			continue
+		}
+
+		cleanStoredReports = append(cleanStoredReports, storedReport)
 	}
 
-	return reports, storedReports
+	return reports, cleanStoredReports
 }
 
 func compareStoredReports(reports []Report, storedReports []Report) ([]Report, []Report) {
