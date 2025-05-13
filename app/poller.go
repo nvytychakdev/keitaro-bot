@@ -19,8 +19,6 @@ func StartPoller(b *gotgbot.Bot) error {
 	ticker = time.NewTicker(TICKER_TIME_INTERVAL)
 	tickerComplete = make(chan bool)
 
-	readActiveReports()
-
 	go func() {
 
 		client.PollingStarted = true

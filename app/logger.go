@@ -19,6 +19,6 @@ func createTelegramLogger(ctx *ext.Context) *slog.Logger {
 
 func SetGlobalLogger() {
 	slog.SetDefault(slog.New(
-		tint.NewHandler(os.Stdout, nil),
+		tint.NewHandler(os.Stdout, &tint.Options{Level: slog.LevelDebug}),
 	))
 }

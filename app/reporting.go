@@ -40,15 +40,17 @@ var storedActiveReports []Report
 
 func trackCampaigns(b *gotgbot.Bot) error {
 
+	readActiveReports()
+
 	reports, err := fetchAllReports()
 	if err != nil {
 		return err
 	}
 
+	slog.Debug("Stored reports list before calculate", "Reports", storedActiveReports)
 	slog.Info("Retrieved list of reports", "ReportsCount", len(reports))
 
-	activeReports := getActiveReports(reports)
-	activeReports, storedActiveReports = compareStoredReports(activeReports, storedActiveReports)
+	activeReports, storedActiveReports := calculateActiveReports(reports, storedActiveReports)
 
 	slog.Info("Collected active reports", "ActiveReportsCount", len(activeReports))
 	slog.Info("Active reports list", "Reports", activeReports)
@@ -123,34 +125,35 @@ func fetchAllReports() ([]Report, error) {
 	return reportResponse.Reports, nil
 }
 
-func getActiveReports(reports []Report) []Report {
+func calculateActiveReports(reports []Report, storedReports []Report) ([]Report, []Report) {
+	// clean existing stored reports
+	for storedReportIndex, storedReport := range storedReports {
+		reportIndex := slices.IndexFunc(reports, func(r Report) bool { return r.CampaignId == storedReport.CampaignId })
+
+		// stored reports that are no longer part of the reports should be removed
+		if reportIndex == -1 {
+			storedReports = deleteFromSlice(storedReports, storedReportIndex)
+			slog.Debug("Stored report cleaned up", "report", storedReport)
+			continue
+		}
+
+		// stored reports that has no sales should be removed
+		if storedReport.Sales == 0 {
+			storedReports = deleteFromSlice(storedReports, storedReportIndex)
+			slog.Debug("Stored report removed due to 0 sales", "report", storedReport)
+		}
+	}
+
 	var activeReports []Report
-
-	for _, report := range reports {
-		if report.Sales <= 0 {
-			continue
-		}
-
-		storedActiveReportIndex := slices.IndexFunc(storedActiveReports, func(r Report) bool { return r.CampaignId == report.CampaignId && r.Sales == report.Sales })
-		if storedActiveReportIndex != -1 {
-			continue
-		}
-
-		activeReports = append(activeReports, report)
-	}
-
-	return activeReports
-}
-
-func compareStoredReports(reports []Report, storedReports []Report) ([]Report, []Report) {
-	if len(storedReports) == 0 {
-		return reports, reports
-	}
-
+	// form list of active reports and stored reports
 	for _, report := range reports {
 		storedReportIndex := slices.IndexFunc(storedReports, func(r Report) bool { return r.CampaignId == report.CampaignId })
 		if storedReportIndex == -1 {
-			storedReports = append(storedReports, report)
+			if report.Sales > 0 {
+				activeReports = append(activeReports, report)
+				storedReports = append(storedReports, report)
+				slog.Debug("Report was not found, added new active report", "report", report)
+			}
 			continue
 		}
 
@@ -158,6 +161,8 @@ func compareStoredReports(reports []Report, storedReports []Report) ([]Report, [
 		if report.Sales > storedReport.Sales {
 			storedReports = deleteFromSlice(storedReports, storedReportIndex)
 			storedReports = append(storedReports, report)
+			activeReports = append(activeReports, report)
+			slog.Debug("Report was found, added new active report (report > stored)", "report", report)
 			continue
 		}
 
@@ -169,11 +174,13 @@ func compareStoredReports(reports []Report, storedReports []Report) ([]Report, [
 			storedReports = deleteFromSlice(storedReports, storedReportIndex)
 			if report.Sales > 0 {
 				storedReports = append(storedReports, report)
+				activeReports = append(activeReports, report)
+				slog.Debug("Report was found, added new active report (report < stored && report > 0)", "report", report)
 			}
 		}
 	}
 
-	return reports, storedReports
+	return activeReports, storedReports
 }
 
 func storeActiveReport(report *[]Report) {
@@ -206,4 +213,6 @@ func readActiveReports() {
 		slog.Error("Not able to unmarshal stored reports", "Err", err.Error())
 		return
 	}
+
+	slog.Info("Read active reports from database", "Reports", storedActiveReports)
 }
