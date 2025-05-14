@@ -127,40 +127,42 @@ func fetchAllReports() ([]Report, error) {
 
 func calculateActiveReports(reports []Report, storedReports []Report) ([]Report, []Report) {
 	// clean existing stored reports
-	for storedReportIndex, storedReport := range storedReports {
+	var remainingStoredReports []Report
+	for _, storedReport := range storedReports {
 		reportIndex := slices.IndexFunc(reports, func(r Report) bool { return r.CampaignId == storedReport.CampaignId })
 
 		// stored reports that are no longer part of the reports should be removed
 		if reportIndex == -1 {
-			storedReports = deleteFromSlice(storedReports, storedReportIndex)
 			slog.Debug("Stored report cleaned up", "report", storedReport)
 			continue
 		}
 
 		// stored reports that has no sales should be removed
 		if storedReport.Sales == 0 {
-			storedReports = deleteFromSlice(storedReports, storedReportIndex)
 			slog.Debug("Stored report removed due to 0 sales", "report", storedReport)
+			continue
 		}
+
+		remainingStoredReports = append(remainingStoredReports, storedReport)
 	}
 
 	var activeReports []Report
 	// form list of active reports and stored reports
 	for _, report := range reports {
-		storedReportIndex := slices.IndexFunc(storedReports, func(r Report) bool { return r.CampaignId == report.CampaignId })
+		storedReportIndex := slices.IndexFunc(remainingStoredReports, func(r Report) bool { return r.CampaignId == report.CampaignId })
 		if storedReportIndex == -1 {
 			if report.Sales > 0 {
 				activeReports = append(activeReports, report)
-				storedReports = append(storedReports, report)
+				remainingStoredReports = append(remainingStoredReports, report)
 				slog.Debug("Report was not found, added new active report", "report", report)
 			}
 			continue
 		}
 
-		storedReport := storedReports[storedReportIndex]
+		storedReport := remainingStoredReports[storedReportIndex]
 		if report.Sales > storedReport.Sales {
-			storedReports = deleteFromSlice(storedReports, storedReportIndex)
-			storedReports = append(storedReports, report)
+			remainingStoredReports = deleteFromSlice(remainingStoredReports, storedReportIndex)
+			remainingStoredReports = append(remainingStoredReports, report)
 			activeReports = append(activeReports, report)
 			slog.Debug("Report was found, added new active report (report > stored)", "report", report)
 			continue
@@ -171,16 +173,16 @@ func calculateActiveReports(reports []Report, storedReports []Report) ([]Report,
 		}
 
 		if report.Sales < storedReport.Sales {
-			storedReports = deleteFromSlice(storedReports, storedReportIndex)
+			remainingStoredReports = deleteFromSlice(remainingStoredReports, storedReportIndex)
 			if report.Sales > 0 {
-				storedReports = append(storedReports, report)
+				remainingStoredReports = append(remainingStoredReports, report)
 				activeReports = append(activeReports, report)
 				slog.Debug("Report was found, added new active report (report < stored && report > 0)", "report", report)
 			}
 		}
 	}
 
-	return activeReports, storedReports
+	return activeReports, remainingStoredReports
 }
 
 func storeActiveReport(report *[]Report) {
