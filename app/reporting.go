@@ -11,6 +11,7 @@ import (
 	"slices"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
+	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 )
 
 type Report struct {
@@ -75,11 +76,27 @@ func trackCampaigns(b *gotgbot.Bot) error {
 			)
 
 			logger.Info("Sent report to the user")
+
 			b.SendMessage(sub.EffectiveSender.ChatId, message, &gotgbot.SendMessageOpts{ParseMode: "Markdown"})
+
+			if report.CampaignId == 511 {
+				sendChiliPhoto(b, sub)
+			}
 		}
 	}
 
 	return nil
+}
+
+func sendChiliPhoto(b *gotgbot.Bot, c *ext.Context) {
+	file, err := os.Open("assets/chili-photo.jpg")
+	if err != nil {
+		slog.Error("Not able to read picture file")
+		return
+	}
+	defer file.Close()
+
+	b.SendPhoto(c.EffectiveSender.ChatId, gotgbot.InputFileByReader("CL", file), &gotgbot.SendPhotoOpts{})
 }
 
 func fetchAllReports() ([]Report, error) {

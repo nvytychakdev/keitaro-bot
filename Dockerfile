@@ -21,6 +21,7 @@ FROM alpine:latest
 WORKDIR /app
 
 COPY --from=builder /app/keitaro-bot .
+COPY --from=builder /app/assets ./assets
 
 # Expose port (optional, match your app's port)
 EXPOSE 8080
