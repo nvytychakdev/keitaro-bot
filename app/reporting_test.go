@@ -4,6 +4,7 @@ import "testing"
 
 func TestCalculateActiveReports(t *testing.T) {
 	t.Run("EmptyReport_NotStored", func(t *testing.T) {
+
 		reports := []Report{}
 		storedReports := []Report{}
 
@@ -19,6 +20,7 @@ func TestCalculateActiveReports(t *testing.T) {
 	})
 
 	t.Run("EmptyActiveReports_NotStored", func(t *testing.T) {
+
 		reports := []Report{
 			{CampaignId: 1, CampaignName: "Test 1", Sales: 0, Leads: 0, Clicks: 0, Conversions: 0},
 			{CampaignId: 2, CampaignName: "Test 2", Sales: 0, Leads: 0, Clicks: 0, Conversions: 0},
@@ -38,6 +40,7 @@ func TestCalculateActiveReports(t *testing.T) {
 	})
 
 	t.Run("ActiveReports_NotStored", func(t *testing.T) {
+
 		reports := []Report{
 			{CampaignId: 1, CampaignName: "Test 1", Sales: 0, Leads: 0, Clicks: 0, Conversions: 0},
 			{CampaignId: 2, CampaignName: "Test 2", Sales: 1, Leads: 0, Clicks: 0, Conversions: 0},
@@ -57,6 +60,7 @@ func TestCalculateActiveReports(t *testing.T) {
 	})
 
 	t.Run("NoReports_Stored", func(t *testing.T) {
+
 		reports := []Report{}
 		storedReports := []Report{
 			{CampaignId: 1, CampaignName: "Test 1", Sales: 0, Leads: 0, Clicks: 0, Conversions: 0},
@@ -76,6 +80,7 @@ func TestCalculateActiveReports(t *testing.T) {
 	})
 
 	t.Run("ActiveReport_Stored_NoDeposit", func(t *testing.T) {
+
 		reports := []Report{
 			{CampaignId: 1, CampaignName: "Test 1", Sales: 0, Leads: 0, Clicks: 0, Conversions: 0},
 			{CampaignId: 2, CampaignName: "Test 2", Sales: 1, Leads: 0, Clicks: 0, Conversions: 0},
@@ -99,6 +104,7 @@ func TestCalculateActiveReports(t *testing.T) {
 	})
 
 	t.Run("Reports_Stored_NoDeposit", func(t *testing.T) {
+
 		reports := []Report{
 			{CampaignId: 1, CampaignName: "Test 1", Sales: 0, Leads: 0, Clicks: 0, Conversions: 0},
 			{CampaignId: 2, CampaignName: "Test 2", Sales: 0, Leads: 0, Clicks: 0, Conversions: 0},
@@ -121,6 +127,7 @@ func TestCalculateActiveReports(t *testing.T) {
 		}
 	})
 	t.Run("ActiveReports_Stored_OneDeposit", func(t *testing.T) {
+
 		reports := []Report{
 			{CampaignId: 1, CampaignName: "Test 1", Sales: 2, Leads: 0, Clicks: 0, Conversions: 0},
 			{CampaignId: 2, CampaignName: "Test 2", Sales: 1, Leads: 0, Clicks: 0, Conversions: 0},
